@@ -18,21 +18,49 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Single Shipment Processing
+
 ```bash
 python pdf_splitter.py sample_shipment.csv sample_labels.pdf [--output-dir OUTPUT_DIR]
 ```
 
-### Arguments:
+#### Arguments:
 
 - `csv_file`: Path to the CSV file containing shipment data
 - `pdf_file`: Path to the PDF file to split
 - `--output-dir`: (Optional) Output directory for the split PDFs. Default is `shipment_[ShipmentID]`
 
-### Example:
+#### Example:
 
 ```bash
 python pdf_splitter.py sample_shipment.csv sample_labels.pdf
 ```
+
+### Batch Processing
+
+For processing multiple shipments at once, use the batch processing script:
+
+```bash
+python process_all.py DIRECTORY_PATH
+```
+
+Or use the provided batch file (Windows):
+
+```
+process_all_shipments.bat "DIRECTORY_PATH"
+```
+
+#### Example:
+
+```bash
+python process_all.py "E:\Developing\ShipmentSplitter\test 2"
+```
+
+The batch processor will:
+1. Find all CSV files in the specified directory
+2. Extract the shipment ID from each CSV filename
+3. Find matching PDF files with the same shipment ID
+4. Process each CSV-PDF pair and create the split PDFs
 
 ## CSV Format Requirements
 

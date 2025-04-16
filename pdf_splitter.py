@@ -218,8 +218,10 @@ def split_pdf(pdf_path, shipment_id, groups, output_dir=None):
     
     # Create output directory if not specified
     if output_dir is None:
+        # Default to creating in current directory
         output_dir = f"shipment_{shipment_id}"
     
+    # Create the directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     logger.info(f"Output directory: {output_dir}")
     
