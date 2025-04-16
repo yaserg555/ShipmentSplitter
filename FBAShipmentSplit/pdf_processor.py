@@ -178,15 +178,16 @@ def process_single_pdf_document(pdf_path, keyword, status_callback):
                  status_callback(f"    It's recommended to check the original PDF for these pages.\n") # Manual check suggestion
         else:
             status_callback(f"    Verification FAILED: Mismatch between pages assigned ({pages_processed_count}) and written ({total_split_pages}).\n")
-            return False
+            return False, 0 # Return False and 0 pages split on verification failure
 
-        return True
+        # Return True and the number of pages actually written to split files
+        return True, total_split_pages 
 
     except Exception as e:
         status_callback(f"  An unexpected error occurred processing {base_filename}: {e}\n")
         import traceback
         status_callback(traceback.format_exc() + "\n")
-        return False
+        return False, 0 # Return False and 0 pages split on general error
     finally:
         if doc:
             doc.close()
@@ -198,10 +199,12 @@ def process_shipment(input_path, is_folder, keyword, status_callback):
     """
     Main processing function called by the GUI thread.
     Handles both single file and folder processing.
+    Returns tuple: (success_count, fail_count, total_files, total_pages_split)
     """
     success_count = 0
     fail_count = 0
     total_files = 0
+    total_pages_split_across_run = 0 # Accumulator for split pages
 
     if is_folder:
         try:
@@ -211,22 +214,28 @@ def process_shipment(input_path, is_folder, keyword, status_callback):
             status_callback(f"Found {total_files} PDF(s) in the folder.\n")
             if not pdf_files:
                  status_callback("No PDF files found in the selected folder.\n")
-                 return 0, 0, 0 # Return counts directly
+                 return 0, 0, 0, 0 # Return counts directly including pages split
             
             for i, pdf_path in enumerate(pdf_files):
                 status_callback(f"--- Processing file {i+1}/{total_files} --- \n")
-                if process_single_pdf_document(pdf_path, keyword, status_callback):
+                # Capture return values including split page count
+                success, pages_split = process_single_pdf_document(pdf_path, keyword, status_callback)
+                if success:
                     success_count += 1
+                    total_pages_split_across_run += pages_split
                 else:
                     fail_count += 1
         except Exception as e:
             status_callback(f"Error scanning folder {input_path}: {e}\n")
             fail_count = total_files # Assume all failed if folder scan fails
+            total_pages_split_across_run = 0 # Reset pages split count on error
     else: # Single file
         total_files = 1
-        if process_single_pdf_document(input_path, keyword, status_callback):
+        success, pages_split = process_single_pdf_document(input_path, keyword, status_callback)
+        if success:
             success_count += 1
+            total_pages_split_across_run = pages_split
         else:
             fail_count += 1
             
-    return success_count, fail_count, total_files
+    return success_count, fail_count, total_files, total_pages_split_across_run
