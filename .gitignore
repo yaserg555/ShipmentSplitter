@@ -12,6 +12,7 @@ build/
 venv/
 env/
 ENV/
+.venv/
 
 # IDE files
 .idea/
@@ -28,3 +29,9 @@ Thumbs.db
 *.pdf
 shipment_*/
 output_*/
+
+# PyInstaller specific
+*.spec
+
+# Executables
+*.exe
