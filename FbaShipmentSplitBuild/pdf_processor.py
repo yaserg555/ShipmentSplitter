@@ -1,67 +1,15 @@
 import fitz  # PyMuPDF
 import os
 import re
-import glob 
+import glob
 from collections import defaultdict
 from utils import sanitize_filename # Use absolute import
 import traceback # Import traceback for detailed error logging
+from sku_finder import find_sku_on_page # Import the extracted function
 
-def _find_sku_on_page(page, status_callback, sku_keyword=None):
-    """
-    Finds the SKU on a single page using primary and fallback methods.
-    Returns the SKU string or None if not found.
-    """
-    # Ensure page object is valid
-    if not page:
-        status_callback("    Error: Invalid page object received in _find_sku_on_page.\n")
-        return None
-        
-    try:
-        text = page.get_text("text")
-        lines = text.splitlines()
-    except Exception as e:
-        status_callback(f"    Error getting text from page {page.number + 1 if page else 'N/A'}: {e}\n")
-        return None
-        
-    sku = None
-    method_used = "None"
 
-    # Prepare regex pattern (keyword is always None now, use defaults)
-    default_keywords = ["数量", "Qty", "Menge"]
-    keyword_pattern = "|".join(default_keywords)
-    primary_sku_regex = re.compile(r'^([A-Z0-9_.-]+)\s+(?:' + keyword_pattern + r')', re.MULTILINE | re.IGNORECASE)
+# Removed the old _find_sku_on_page function definition
 
-    # 1. Try Primary Regex
-    primary_match = primary_sku_regex.search(text)
-    if primary_match:
-        sku = primary_match.group(1).strip()
-        method_used = "Primary Regex"
-    else:
-        # 2. Try Fallback 1: Line after "Single SKU"
-        try:
-            single_sku_line_index = -1
-            for i, line in enumerate(lines):
-                if "single sku" in line.lower():
-                    single_sku_line_index = i
-                    break
-            
-            if single_sku_line_index != -1 and single_sku_line_index + 1 < len(lines):
-                potential_sku = lines[single_sku_line_index + 1].strip()
-                if potential_sku and re.match(r'^[A-Z0-9_.-]+$', potential_sku, re.IGNORECASE): 
-                    sku = potential_sku
-                    method_used = "Fallback 1 (After 'Single SKU')"
-        except Exception as e:
-            status_callback(f"    Warn: Error during Fallback 1 on page {page.number + 1}: {e}\n")
-
-        # 3. Try Fallback 2: 4th line (if Fallback 1 failed)
-        if sku is None: 
-            if len(lines) >= 4:
-                potential_sku = lines[3].strip() 
-                if potential_sku and re.match(r'^[A-Z0-9_.-]+$', potential_sku, re.IGNORECASE):
-                    sku = potential_sku
-                    method_used = "Fallback 2 (4th Line)"
-         
-    return sku
 
 def _create_grouped_output_pdfs(doc, sku_output_pages, shipping_id, output_dir, status_callback):
     """
@@ -156,7 +104,8 @@ def process_single_pdf_document(pdf_path, keyword, status_callback):
         if total_pages >= 2:
             try:
                 page_one = doc.load_page(1) # Page index 1 is the second page
-                sku_on_page_two = _find_sku_on_page(page_one, status_callback, keyword)
+                # Use the imported function (keyword argument is no longer used by the new function)
+                sku_on_page_two = find_sku_on_page(page_one, status_callback)
                 if sku_on_page_two is None:
                     is_interleaved_mode = True
                     # Clarify mode and implication
@@ -182,7 +131,8 @@ def process_single_pdf_document(pdf_path, keyword, status_callback):
         status_callback(f"  Scanning {total_pages} pages...\n")
         for page_num in range(total_pages):
             page = doc.load_page(page_num)
-            sku = _find_sku_on_page(page, status_callback, keyword)
+            # Use the imported function (keyword argument is no longer used by the new function)
+            sku = find_sku_on_page(page, status_callback)
             if sku:
                 sku_pages[sku].append(page_num)
                 pages_with_sku_count += 1
